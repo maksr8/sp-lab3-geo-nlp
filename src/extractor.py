@@ -163,7 +163,13 @@ class GeometryExtractor:
     def _scan_children_for_label(self, token: Token, all_tokens: List[Token]) -> Optional[str]:
         for t in all_tokens:
             if t.head == token.id and re.match(r'^[A-Z]{1,3}$', t.text):
-                if t.deprel in ['parataxis', 'conj', 'nmod']: continue
+                if t.deprel in ['parataxis', 'conj']:
+                    continue
+
+                if t.deprel == 'nmod':
+                    if len(t.text) == 3 and token.lemma != "трикутник":
+                        continue
+
                 return t.text
         return None
 
