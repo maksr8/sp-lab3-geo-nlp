@@ -22,7 +22,6 @@ class GeometryPlotter:
         if define_cmds:
             base_triangle_cmd = define_cmds[0]
             remaining_defines = define_cmds[1:]
-
             self._setup_triangle(base_triangle_cmd, force_create=True)
         else:
             self._default_triangle()
@@ -89,11 +88,9 @@ class GeometryPlotter:
                 if p1_n in self.points and p2_n in self.points:
                     x1, y1 = self.points[p1_n]
                     x2, y2 = self.points[p2_n]
-
                     t = 0.35
                     nx = x1 + t * (x2 - x1)
                     ny = y1 + t * (y2 - y1)
-
                     point_name = label if label else "D"
                     self.points[point_name] = (nx, ny)
             return
@@ -104,7 +101,7 @@ class GeometryPlotter:
             if len(label) == 2:
                 s, e = label[0], label[1]
                 if s in self.points and e in self.points:
-                    self.lines.append((s, e, "black"))
+                    self._add_line_if_missing(s, e, "black")
             return
 
         start_name = label[0]
@@ -127,7 +124,6 @@ class GeometryPlotter:
             target_x = (p1[0] + p2[0]) / 2
             target_y = (p1[1] + p2[1]) / 2
             color = "blue"
-
         elif entity == "altitude":
             x0, y0 = start_coords
             x1, y1 = p1
@@ -138,7 +134,6 @@ class GeometryPlotter:
             target_x = x1 + t * dx
             target_y = y1 + t * dy
             color = "red"
-
         elif entity == "bisector":
             len1 = math.sqrt((start_coords[0] - p1[0]) ** 2 + (start_coords[1] - p1[1]) ** 2)
             len2 = math.sqrt((start_coords[0] - p2[0]) ** 2 + (start_coords[1] - p2[1]) ** 2)

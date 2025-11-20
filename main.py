@@ -22,7 +22,7 @@ def main():
     extractor = GeometryExtractor()
     plotter = GeometryPlotter()
 
-    raw_task_text = "168.• На стороні AC трикутника ABC позначили точку D. Відрізок BD розбиває трикутник ABC на два трикутники, периметри яких дорівнюють 32 см і 36 см. Знайдіть периметр трикутника ABC, якщо BD = 10 см."
+    raw_task_text = """239.• У рівнобедреному трикутнику ABC з основою AC на медіані BD позначили довільну точку M. Доведіть, що: 1) ∆ AMB =  ∆ CMB; 2) ∆ AMD = ∆ CMD."""
 
     print(f"\n>>> Raw Input: {raw_task_text}")
 
