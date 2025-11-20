@@ -27,9 +27,6 @@ class UDPipeClient:
     def analyze(self, text: str) -> List[Token]:
         """
         Sends text to UDPipe and returns a list of Token objects.
-
-        :param text: Raw input text (e.g., "Побудувати висоту.")
-        :return: List of Token objects representing the parsed sentence.
         """
         params = {
             "tokenizer": "",
@@ -86,7 +83,7 @@ class UDPipeClient:
 
 if __name__ == "__main__":
     client = UDPipeClient()
-    sample_text = "Побудувати висоту до гіпотенузи."
+    sample_text = "Дано рівнобедрений трикутник."
     tokens = client.analyze(sample_text)
 
     print(f"{'ID':<4} {'TEXT':<15} {'LEMMA':<15} {'UPOS':<6} {'HEAD':<6} {'DEPREL':<10}")
