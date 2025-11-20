@@ -125,6 +125,11 @@ class GeometryExtractor:
         if child_label: return child_label
 
         if parent_token.head != 0:
+            for t in all_tokens:
+                if t.head == parent_token.head and t.id != parent_token.id:
+                    return t.text
+
+        if parent_token.head != 0:
             head = next((t for t in all_tokens if t.id == parent_token.head), None)
             if head and parent_token.deprel in ['appos', 'nmod', 'conj', 'obl']:
                 hl = self._scan_children_for_label(head, all_tokens)

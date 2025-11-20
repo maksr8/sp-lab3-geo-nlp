@@ -16,15 +16,14 @@ class GeometryPlotter:
 
     def execute_commands(self, commands: list):
         define_cmds = [c for c in commands if c.get("command") == "DEFINE"]
-        action_cmds = [c for c in commands if c.get("command") != "DEFINE"]
+        action_cmds = [c for c in commands if c.get("command") in ["CONSTRUCT", "CALCULATE"]]
 
         for cmd in define_cmds:
             if cmd.get("entity") == "triangle":
                 self._setup_triangle(cmd)
 
         for cmd in action_cmds:
-            if cmd.get("command") == "CONSTRUCT":
-                self._construct_element(cmd)
+            self._construct_element(cmd)
 
     def _setup_triangle(self, cmd):
         specs = cmd.get("params", {}).get("specifications", [])
@@ -82,7 +81,7 @@ class GeometryPlotter:
             if len(label) == 2:
                 s, e = label[0], label[1]
                 if s in self.points and e in self.points:
-                    # self.lines.append((s, e, "black"))
+                    self.lines.append((s, e, "black"))
                     pass
             return
 
@@ -147,7 +146,7 @@ class GeometryPlotter:
                 self.ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color=color, linewidth=2)
 
         for name, (x, y) in self.points.items():
-            self.ax.plot(x, y, 'ko')  # black dot
+            self.ax.plot(x, y, 'ko')
             self.ax.text(x + 0.1, y + 0.1, name, fontsize=12, fontweight='bold')
 
         plt.grid(True)

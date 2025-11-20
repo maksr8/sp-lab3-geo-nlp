@@ -22,7 +22,7 @@ def main():
     extractor = GeometryExtractor()
     plotter = GeometryPlotter()
 
-    raw_task_text = "168.• На стороні AC трикутника ABC позначили точку D. Відрізок BD розбиває трикутник ABC на два трикутники, периметри яких дорівнюють 32 см і 36 см. Знайдіть периметр трикутника ABC, якщо BD = 10 см."
+    raw_task_text = "169.• На стороні BC трикутника ABC позначили точку M. Периметри трикутників ABC, AMC і AMB дорівнюють відповідно 60 см, 36 см і 50 см. Знайдіть відрізок AM."
 
     print(f"\n>>> Raw Input: {raw_task_text}")
 
