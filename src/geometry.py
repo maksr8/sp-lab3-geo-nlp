@@ -1,5 +1,4 @@
 import math
-
 import matplotlib.pyplot as plt
 
 
@@ -7,30 +6,75 @@ class GeometryPlotter:
     def __init__(self):
         self.fig, self.ax = plt.subplots()
         self.ax.set_aspect('equal')
-        self.points = {
-            "A": (0, 0),
-            "B": (2, 4),
-            "C": (5, 0)
-        }
+        self.points = {}
         self.lines = []
 
     def execute_commands(self, commands: list):
+        # Розділяємо команди
         define_cmds = [c for c in commands if c.get("command") == "DEFINE"]
         action_cmds = [c for c in commands if c.get("command") in ["CONSTRUCT", "CALCULATE"]]
 
-        for cmd in define_cmds:
-            if cmd.get("entity") == "triangle":
-                self._setup_triangle(cmd)
+        # Очищаємо сцену перед новим малюнком
+        self.points = {}
+        self.lines = []
 
+        # ЕТАП 1: Базовий світ (Створення першого трикутника)
+        # Беремо перший DEFINE як "Батьківський", який задає систему координат
+        base_triangle_cmd = None
+        remaining_defines = []
+
+        if define_cmds:
+            base_triangle_cmd = define_cmds[0]
+            remaining_defines = define_cmds[1:]
+
+            # Будуємо базу (ABC)
+            self._setup_triangle(base_triangle_cmd, force_create=True)
+        else:
+            # Якщо трикутника нема в командах, створюємо дефолтний
+            self._default_triangle()
+
+        # ЕТАП 2: Наповнення (Точки, Медіани, Висоти)
+        # Це створить точку M, яка потрібна для AMC
         for cmd in action_cmds:
             self._construct_element(cmd)
 
-    def _setup_triangle(self, cmd):
+        # ЕТАП 3: Вторинні фігури (AMC, AMB)
+        # Тепер, коли точка M існує, ми можемо з'єднати AMC
+        for cmd in remaining_defines:
+            if cmd.get("entity") == "triangle":
+                # force_create=False означає "не вигадуй координати, використовуй існуючі"
+                self._setup_triangle(cmd, force_create=False)
+
+    def _default_triangle(self):
+        self.points = {"A": (0, 0), "B": (2, 5), "C": (7, 0)}
+        self.lines = [("A", "B", "black"), ("B", "C", "black"), ("C", "A", "black")]
+
+    def _setup_triangle(self, cmd, force_create=False):
         specs = cmd.get("params", {}).get("specifications", [])
         label = cmd.get("label", "ABC")
 
+        # Захист від пустих лейблів
+        if not label or len(label) != 3: label = "ABC"
+
         v1, v2, v3 = label[0], label[1], label[2]
 
+        # СТРАТЕГІЯ КОРИСТУВАЧА:
+        # Якщо точки вже існують - просто домальовуємо лінії (зв'язки)
+        if not force_create:
+            if v1 in self.points and v2 in self.points and v3 in self.points:
+                # Точки є, просто додаємо ребра, якщо їх ще немає
+                self._add_line_if_missing(v1, v2, "black")
+                self._add_line_if_missing(v2, v3, "black")
+                self._add_line_if_missing(v3, v1, "black")
+                return
+            else:
+                # Якщо точок немає, але force_create=False, це проблема.
+                # Але для MVP ми можемо спробувати їх створити, або проігнорувати.
+                # В контексті твоєї задачі (ABC, AMC) - M вже існує, A і C існують.
+                # Тож ми зайдемо в блок if вище.
+                pass
+
+        # Якщо це Базовий трикутник (force_create=True), обчислюємо координати
         if "isosceles" in specs:
             self.points[v1] = (0, 0)
             self.points[v2] = (3, 5)
@@ -70,8 +114,7 @@ class GeometryPlotter:
                     nx = x1 + t * (x2 - x1)
                     ny = y1 + t * (y2 - y1)
 
-                    point_name = label if label else "W"
-
+                    point_name = label if label else "D"
                     self.points[point_name] = (nx, ny)
             return
 
@@ -81,8 +124,8 @@ class GeometryPlotter:
             if len(label) == 2:
                 s, e = label[0], label[1]
                 if s in self.points and e in self.points:
-                    self.lines.append((s, e, "black"))
-                    pass
+                    # Малюємо фіолетовим
+                    self.lines.append((s, e, "magenta"))
             return
 
         start_name = label[0]
@@ -110,13 +153,9 @@ class GeometryPlotter:
             x0, y0 = start_coords
             x1, y1 = p1
             x2, y2 = p2
-
             dx, dy = x2 - x1, y2 - y1
-
             if dx == 0 and dy == 0: return
-
             t = ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy)
-
             target_x = x1 + t * dx
             target_y = y1 + t * dy
             color = "red"
@@ -124,9 +163,7 @@ class GeometryPlotter:
         elif entity == "bisector":
             len1 = math.sqrt((start_coords[0] - p1[0]) ** 2 + (start_coords[1] - p1[1]) ** 2)
             len2 = math.sqrt((start_coords[0] - p2[0]) ** 2 + (start_coords[1] - p2[1]) ** 2)
-
             k = len1 / len2
-
             target_x = (p1[0] + k * p2[0]) / (1 + k)
             target_y = (p1[1] + k * p2[1]) / (1 + k)
             color = "green"
@@ -134,11 +171,16 @@ class GeometryPlotter:
         if end_name:
             if end_name not in self.points:
                 self.points[end_name] = (target_x, target_y)
-
             self.lines.append((start_name, end_name, color))
 
+    def _add_line_if_missing(self, s, e, color):
+        # Перевіряємо, чи є вже лінія між цими точками (в будь-якому напрямку)
+        for existing_s, existing_e, _ in self.lines:
+            if (existing_s == s and existing_e == e) or (existing_s == e and existing_e == s):
+                return
+        self.lines.append((s, e, color))
+
     def plot(self, save_path=None):
-        """Renders the plot."""
         for start, end, color in self.lines:
             if start in self.points and end in self.points:
                 p1 = self.points[start]

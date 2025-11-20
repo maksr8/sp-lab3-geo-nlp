@@ -50,46 +50,67 @@ class GeometryExtractor:
                 if not (root and self._check_keyword(root.lemma, "CMD_CALCULATE")):
                     continue
 
-            label = self._find_label_for_token(token, tokens)
+            main_label = self._find_label_for_token(token, tokens)
 
-            if e_type != "triangle" and label and len(label) == 3:
+            if e_type != "triangle" and main_label and len(main_label) == 3:
                 alt_label = self._find_short_label(token, tokens)
-                if alt_label: label = alt_label
+                if alt_label: main_label = alt_label
 
-            command = "CONSTRUCT"
-            if e_type == "triangle": command = "DEFINE"
+            labels_to_process = []
+            if main_label:
+                labels_to_process.append(main_label)
+                conjunctions = self._find_conjunctions(main_label, tokens)
+                labels_to_process.extend(conjunctions)
+            else:
+                labels_to_process.append(None)
 
-            root = next((t for t in tokens if t.head == 0), None)
-            if root and self._check_keyword(root.lemma, "CMD_CALCULATE") and token.head == root.id:
-                command = "CALCULATE"
+            for label in labels_to_process:
+                command = "CONSTRUCT"
+                if e_type == "triangle": command = "DEFINE"
 
-            cmd_obj = {
-                "command": command,
-                "entity": e_type,
-                "label": label,
-                "params": {}
-            }
+                root = next((t for t in tokens if t.head == 0), None)
+                if root and self._check_keyword(root.lemma, "CMD_CALCULATE") and token.head == root.id:
+                    command = "CALCULATE"
 
-            if e_type == "triangle" and global_specs:
-                cmd_obj["params"]["specifications"] = list(set(global_specs))
-            elif e_type != "triangle":
-                specs = self._find_specs(token, tokens)
-                if specs: cmd_obj["params"]["specifications"] = specs
+                cmd_obj = {
+                    "command": command,
+                    "entity": e_type,
+                    "label": label,
+                    "params": {}
+                }
 
-            if e_type == "point":
-                for t in tokens:
-                    if self._get_entity_type(t.lemma) == "segment":
-                        seg_label = self._find_label_for_token(t, tokens)
-                        if seg_label:
-                            cmd_obj["params"]["on_segment"] = seg_label
-                            break
+                if e_type == "triangle" and global_specs:
+                    cmd_obj["params"]["specifications"] = list(set(global_specs))
+                elif e_type != "triangle":
+                    specs = self._find_specs(token, tokens)
+                    if specs: cmd_obj["params"]["specifications"] = specs
 
-            val = self._find_value(token, tokens)
-            if val: cmd_obj["params"]["value"] = val
+                if e_type == "point":
+                    for t in tokens:
+                        if self._get_entity_type(t.lemma) == "segment":
+                            seg_label = self._find_label_for_token(t, tokens)
+                            if seg_label:
+                                cmd_obj["params"]["on_segment"] = seg_label
+                                break
 
-            extracted_commands.append(cmd_obj)
+                val = self._find_value(token, tokens)
+                if val: cmd_obj["params"]["value"] = val
+
+                extracted_commands.append(cmd_obj)
 
         return extracted_commands
+
+    def _find_conjunctions(self, main_label: str, tokens: List[Token]) -> List[str]:
+        label_token = next((t for t in tokens if t.text == main_label), None)
+
+        if not label_token: return []
+
+        conjs = []
+        for t in tokens:
+            if t.head == label_token.id and t.deprel == 'conj':
+                if re.match(r'^[A-Z]{1,3}$', t.text):
+                    conjs.append(t.text)
+        return conjs
 
     def _get_spec_type(self, lemma: str) -> Optional[str]:
         l = lemma.lower()
@@ -127,7 +148,9 @@ class GeometryExtractor:
         if parent_token.head != 0:
             for t in all_tokens:
                 if t.head == parent_token.head and t.id != parent_token.id:
-                    return t.text
+                    if re.match(r'^[A-Z]{1,3}$', t.text):
+                        if t.deprel not in ['nmod', 'conj']:
+                            return t.text
 
         if parent_token.head != 0:
             head = next((t for t in all_tokens if t.id == parent_token.head), None)
